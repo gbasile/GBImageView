@@ -3,7 +3,7 @@ GBImageView
 
 GBImageView is a replacement of NSImageView for Mac OS X that supports animations, asynchronous request to fetch an image from an NSURL and a conveniente internal cache system.
 
-Features: 
+Features 
 =========
 
 1. Support Local Images
