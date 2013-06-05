@@ -13,7 +13,7 @@ Features:
 5. Support for custom CATransition
 
 
-Usage: 
+Usage 
 =========
 
 1. Link QuartzCore and IOKit
@@ -22,7 +22,7 @@ Usage:
 
 ![GBImageView instructions](http://img153.imageshack.us/img153/3097/gbimageviewinstruction.png)
 
-License: 
+License 
 ========
 
 Copyright (C) 2013 Giuseppe Basile
