@@ -12,7 +12,8 @@ static EGOCache *sharedInstance = nil;
 @interface GBImageView ()
 @property (nonatomic, strong) NSImageView *currentImageView;
 @property (nonatomic, strong) NSURLConnection *currentConnection;
-@property (nonatomic, strong) NSURL *currentRequestURL;
+@property (nonatomic, strong) NSString *currentRequestURL;
+@property (nonatomic, strong) NSString *currentCacheIdentifier;
 @property (nonatomic, strong) NSMutableData *imageData;
 @property (nonatomic, readonly) EGOCache *imageCache;
 @end
@@ -41,7 +42,7 @@ static EGOCache *sharedInstance = nil;
     if (shouldCancelPreviousRequest) {
         [self cancelPreviousRequest];
     }
-
+    
     NSImageView *newImageView = nil;
     if (image) {
         newImageView = [[NSImageView alloc] initWithFrame:self.bounds];
@@ -99,15 +100,33 @@ static EGOCache *sharedInstance = nil;
 }
 
 #pragma mark Asynchronous Image Request
-- (void)setImageWithURL:(NSURL *)url
+- (void)setImageWithURL:(NSString *)url
 {
-    [self setImageWithURL:url placeholderImage:nil];
+    [self setImageWithURL:url placeholderImage:nil customCacheKey:nil];
 }
 
-- (void)setImageWithURL:(NSURL *)url
+- (void)setImageWithURL:(NSString *)url customCacheKey:(NSString *)cacheIdentifier
+{
+    [self setImageWithURL:url placeholderImage:nil customCacheKey:cacheIdentifier];
+}
+
+- (void)setImageWithURL:(NSString *)url
        placeholderImage:(NSImage *)placeholderImage
 {
-    NSImage *theCachedImage = [self.imageCache imageForKey:[[self class] cacheKeyforURL:url]];
+    [self setImageWithURL:url placeholderImage:placeholderImage customCacheKey:nil];
+}
+
+- (void)setImageWithURL:(NSString *)url
+       placeholderImage:(NSImage *)placeholderImage
+         customCacheKey:(NSString *)cacheIdentifier
+{
+    if (cacheIdentifier) {
+        cacheIdentifier = [[self class] cacheKeyForString:cacheIdentifier];
+    } else {
+        cacheIdentifier = [[self class] cacheKeyForString:url];
+    }
+    
+    NSImage *theCachedImage = [self.imageCache imageForKey:cacheIdentifier];
     if (theCachedImage) {
         [self setImage:theCachedImage shouldCancelPreviousRequest:NO];
         return;
@@ -121,9 +140,10 @@ static EGOCache *sharedInstance = nil;
     if (placeholderImage) {
         [self setImage:placeholderImage shouldCancelPreviousRequest:NO];
     }
-
+    
     self.currentRequestURL = url;
-    NSURLRequest *request = [[NSURLRequest alloc] initWithURL:self.currentRequestURL];
+    self.currentCacheIdentifier = cacheIdentifier;
+    NSURLRequest *request = [[NSURLRequest alloc] initWithURL:[NSURL URLWithString:self.currentRequestURL]];
     self.currentConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:YES];
     self.imageData = [NSMutableData data];
 }
@@ -133,6 +153,7 @@ static EGOCache *sharedInstance = nil;
     [self.currentConnection cancel];
     self.currentConnection = nil;
     self.currentRequestURL = nil;
+    self.currentCacheIdentifier = nil;
 }
 
 #pragma mark - NSURLConnection (delegate)
@@ -145,7 +166,7 @@ static EGOCache *sharedInstance = nil;
 {
     if (self.currentConnection) {
         [self setImage:[[NSImage alloc] initWithData:self.imageData] shouldCancelPreviousRequest:NO];
-        [self.imageCache setImage:self.image forKey:[[self class] cacheKeyforURL:self.currentRequestURL] withTimeoutInterval:[[self class] timeoutInterval]];
+        [self.imageCache setImage:self.image forKey:self.currentCacheIdentifier withTimeoutInterval:[[self class] timeoutInterval]];
         self.currentConnection = nil;
     }
 }
@@ -189,8 +210,12 @@ static EGOCache *sharedInstance = nil;
 
 + (NSString *)cacheKeyforURL:(NSURL *)url
 {
-    NSString *stringURL = [url absoluteString];
-    const char *UTF8URL = [stringURL UTF8String];
+    return [self cacheKeyForString:[url absoluteString]];
+}
+
++ (NSString *)cacheKeyForString:(NSString *)string
+{
+    const char *UTF8URL = [string UTF8String];
     unsigned char result[16];
     CC_MD5(UTF8URL, (CC_LONG)strlen(UTF8URL), result);
     

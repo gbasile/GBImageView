@@ -13,10 +13,14 @@
 @property (strong, nonatomic) CATransition *transition;
 
 #pragma mark - Asynchronous Image Request
-- (void)setImageWithURL:(NSURL *)url;
-
-- (void)setImageWithURL:(NSURL *)url
+- (void)setImageWithURL:(NSString *)url;
+- (void)setImageWithURL:(NSString *)url
+         customCacheKey:(NSString *)cacheIdentifier;
+- (void)setImageWithURL:(NSString *)url
        placeholderImage:(NSImage *)placeholderImage;
+- (void)setImageWithURL:(NSString *)url
+       placeholderImage:(NSImage *)placeholderImage
+         customCacheKey:(NSString *)cacheIdentifier;
 
 #pragma mark - Cache System
 + (NSTimeInterval)timeoutInterval; // Default 1 day
